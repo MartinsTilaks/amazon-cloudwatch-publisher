@@ -35,7 +35,6 @@ import time
 import boto3
 import botocore
 import psutil
-import requests
 import timeloop
 
 
@@ -132,80 +131,28 @@ def set_instance_id():
     logging.info('Instance ID is {0}'.format(instance_id))
 
 
-def get_credentials_cognito():
-    """
-    Acquire credentials using Cognito and a username/password combo.
-    return: Dictionary of credential values
-    """
-    region = config['agent']['region']
-    auth = config['agent']['authentication']
-    client_config = botocore.config.Config(signature_version=botocore.UNSIGNED, region_name=region)
-    cognito_idp = boto3.client('cognito-idp', config=client_config)
-    cognito_id = boto3.client('cognito-identity', config=client_config)
-    username = instance_id
-    logging.info('Getting new credentials for {0} in user pool {1}'.format(username, auth['userPoolId']))
-    auth_flow = 'USER_PASSWORD_AUTH'
-    auth_params = {'USERNAME': username, 'PASSWORD': auth['password']}
-    response = cognito_idp.initiate_auth(ClientId=auth['appClientId'], AuthFlow=auth_flow, AuthParameters=auth_params)
-    id_login = 'cognito-idp.{0}.amazonaws.com/{1}'.format(region, auth['userPoolId'])
-    id_token = response['AuthenticationResult']['IdToken']
-    login_map = {id_login: id_token}
-    response = cognito_id.get_id(AccountId=auth['accountId'], IdentityPoolId=auth['identityPoolId'], Logins=login_map)
-    response = cognito_id.get_credentials_for_identity(IdentityId=response['IdentityId'], Logins=login_map)
-    return response['Credentials']
 
 
-def get_credentials_iot():
-    """
-    Acquire credentials using an IoT x509 certificate.
-    return: Dictionary of credential values
-    """
-    endpoint = config['agent']['authentication']['iotUrl']
-    role_alias = config['agent']['authentication']['roleAlias']
-    thing_name = config['agent']['authentication']['thingName']
-    certificate = config['agent']['authentication']['certificate']
-    url = f'https://{endpoint}/role-aliases/{role_alias}/credentials'
-    headers = {'x-amzn-iot-thingname': thing_name}
-    response = requests.get(url, headers=headers, cert=certificate)
-    credentials = response.json()['credentials']
-    return {
-        'AccessKeyId': credentials['accessKeyId'],
-        'SecretKey': credentials['secretAccessKey'],
-        'SessionToken': credentials['sessionToken'],
-    }
 
 
-def init_boto3_session(credentials):
+
+
+def init_boto3_session():
     """
     Initialize the boto3 session.
     @param credentials: Dictionary of credential values
     """
     global client_session
-    if credentials:
-        session_params = {
-            'aws_access_key_id': credentials['AccessKeyId'],
-            'aws_secret_access_key': credentials['SecretKey'],
-            'aws_session_token': credentials['SessionToken'],
-            'region_name': config['agent']['region']
-        }
-        client_session = boto3.session.Session(**session_params)
-    else:
-        client_session = boto3.session.Session()
+
+    client_session = boto3.session.Session(
+        region="eu-central-1",
+        aws_access_key_id="ACCESS_KEY",
+        aws_secret_access_key="SECRET_KEY"
+    )
 
 
 def set_credentials():
-    """Set up the boto3 session with valid credentials."""
-    authentication = config['agent'].get('authentication', {})
-    if 'password' in authentication:
-        logging.info('Acquiring credentials using Cognito username/password')
-        credentials = get_credentials_cognito()
-    elif 'certificate' in authentication:
-        logging.info('Acquiring credentials using IoT X.509 certificate')
-        credentials = get_credentials_iot()
-    else:
-        logging.info('No authentication section in config, using credentials from environment')
-        credentials = None
-    init_boto3_session(credentials)
+    init_boto3_session()
 
 
 def set_metric_info(name, unit):
