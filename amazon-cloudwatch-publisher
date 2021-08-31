@@ -42,6 +42,10 @@ import timeloop
 DEFAULT_MAX_LOG_SIZE = 100 * 1024 * 1024
 DEFAULT_MAX_LOG_COUNT = 5
 
+AWS_KEY = "ACCESS_KEY"
+AWS_SECRET_KEY = "SECRET_KEY"
+AWS_REGION = "REGION"
+
 # Default config and log locations mirror those of the CloudWatch Agent
 DEFAULT_CONFIG_FILENAME = '/opt/aws/amazon-cloudwatch-publisher/etc/amazon-cloudwatch-publisher.json'
 DEFAULT_LOG_FILENAME = '/opt/aws/amazon-cloudwatch-publisher/logs/amazon-cloudwatch-publisher.log'
@@ -89,7 +93,11 @@ except OSError:
 credentials_interval = DEFAULT_CREDENTIALS_INTERVAL
 metric_interval = config['agent'].get('metrics_collection_interval', DEFAULT_METRICS_INTERVAL)
 logs_interval = config['agent'].get('logs_collection_interval', DEFAULT_LOGS_INTERVAL)
+authentification = config['agent'].get('authentification', {})
 
+region= config['agent'].get('region', AWS_REGION)
+aws_access_key_id= authentification.get('aws_access_key', AWS_KEY)
+aws_secret_access_key= authentification.get('aws_secret_access_key', AWS_SECRET_KEY)
 
 # Global object that keeps the Boto3 session with Cognito-provided credentials
 client_session = None
@@ -145,9 +153,9 @@ def init_boto3_session():
     global client_session
 
     client_session = boto3.session.Session(
-        region="eu-central-1",
-        aws_access_key_id="ACCESS_KEY",
-        aws_secret_access_key="SECRET_KEY"
+        region=AWS_REGION,
+        aws_access_key_id= AWS_KEY,
+        aws_secret_access_key= AWS_SECRET_KEY 
     )
 
 
@@ -173,10 +181,10 @@ def initialize_metric_table():
     set_metric_info('MemoryUtilization', 'Percent')
     set_metric_info('MemoryUsed', 'Bytes')
     set_metric_info('MemoryAvailable', 'Bytes')
-    set_metric_info('DiskReadBytes', 'Bytes')
-    set_metric_info('DiskWriteBytes', 'Bytes')
-    set_metric_info('DiskReadOps', 'Count')
-    set_metric_info('DiskWriteOps', 'Count')
+    # set_metric_info('DiskReadBytes', 'Bytes')
+    # set_metric_info('DiskWriteBytes', 'Bytes')
+    # set_metric_info('DiskReadOps', 'Count')
+    # set_metric_info('DiskWriteOps', 'Count')
     set_metric_info('NetworkIn', 'Bytes')
     set_metric_info('NetworkOut', 'Bytes')
     set_metric_info('NetworkPacketsIn', 'Count')
@@ -228,14 +236,14 @@ def set_memory_metrics():
     set_absolute_metric('MemoryUsed', memory.used)
     set_absolute_metric('MemoryAvailable', memory.available)
 
-
-def set_disk_metrics():
-    """Write disk info into the metric table."""
-    disk_io = psutil.disk_io_counters()
-    set_relative_metric('DiskReadBytes', disk_io.read_bytes)
-    set_relative_metric('DiskWriteBytes', disk_io.write_bytes)
-    set_relative_metric('DiskReadOps', disk_io.read_count)
-    set_relative_metric('DiskWriteOps', disk_io.write_count)
+""""psutil.disk_io_counter() gives error if enabled in Rpi"""
+# def set_disk_metrics():
+#     """Write disk info into the metric table."""
+#     disk_io = psutil.disk_io_counters()
+#     set_relative_metric('DiskReadBytes', disk_io.read_bytes)
+#     set_relative_metric('DiskWriteBytes', disk_io.write_bytes)
+#     set_relative_metric('DiskReadOps', disk_io.read_count)
+#     set_relative_metric('DiskWriteOps', disk_io.write_count)
 
 
 def set_network_metrics():
@@ -251,7 +259,7 @@ def refresh_metric_table():
     """Write all metrics into the metric table."""
     set_cpu_metrics()
     set_memory_metrics()
-    set_disk_metrics()
+#    set_disk_metrics()
     set_network_metrics()
 
 

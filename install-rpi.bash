@@ -24,6 +24,15 @@ chown -R cwpublisher: /opt/aws/amazon-cloudwatch-publisher
 chmod -R u+rwX,g-rwx,o-rwx /opt/aws/amazon-cloudwatch-publisher
 
 
+# Write configuration file details
+read -p "Region: " region
+read -p "AWS_ACCESS_KEY: " access_key
+read -p "AWS_SECRET_ACCESS_KEY: " secret_key
+
+sed -i "s/REGION/$region/" /opt/aws/amazon-cloudwatch-publisher/etc/amazon-cloudwatch-publisher.json
+sed -i "s/AWS_ACCESS_KEY/$access_key/" /opt/aws/amazon-cloudwatch-publisher/etc/amazon-cloudwatch-publisher.json
+sed -i "s/AWS_SECRET_ACCESS_KEY/$secret_key/" /opt/aws/amazon-cloudwatch-publisher/etc/amazon-cloudwatch-publisher.json
+
 
 
 

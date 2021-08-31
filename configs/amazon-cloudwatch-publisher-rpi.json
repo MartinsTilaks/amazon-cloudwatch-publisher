@@ -3,10 +3,14 @@
     "instance": {
       "prefix": "rpi",
       "command": "cat /proc/cpuinfo | grep Serial | awk '{print $NF}'"
-
+    },
+    "authentication": {
+      "aws_access_key": "AWS_ACCESS_KEY",
+      "aws_secret_access_key": "AWS_SECRET_ACCESS_KEY"
+      
  
     },
-    
+    "region": "REGION",
     "metrics_collection_interval": 60,
     "logs_collection_interval": 10,
     "logfile": "/opt/aws/amazon-cloudwatch-publisher/logs/amazon-cloudwatch-publisher.log",
